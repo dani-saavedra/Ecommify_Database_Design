@@ -40,8 +40,9 @@ Universidad de La Sabana — Diseño y Optimización de Bases de Datos, 2026
 │   ├── Data_Exploration_Analysis.ipynb
 │   └── Optimization_Analysis.ipynb # Benchmark antes/después
 ├── scripts/
-│   ├── load_kaggle_to_supabase.py  # Carga dataset completo en Supabase
-│   └── capture_explain_metrics.py  # Captura EXPLAIN ANALYZE
+│   ├── setup_full.py               # Carga dataset Kaggle en Supabase + crea índices
+│   ├── patch_q4_q5.py              # Captura métricas EXPLAIN ANALYZE (Q4 GIN trigram, Q5 GiST)
+│   └── generate_report.py          # Genera informe_unidad5_ecommify.pdf con gráficas embebidas
 ├── evidencias/
 │   ├── postgresql/
 │   │   ├── metrics_raw.json
@@ -60,7 +61,7 @@ Universidad de La Sabana — Diseño y Optimización de Bases de Datos, 2026
 
 ### Prerequisitos
 ```bash
-pip install supabase pandas kagglehub
+pip install supabase pandas kagglehub requests reportlab matplotlib numpy
 ```
 
 ### Paso 1: Crear esquema en Supabase
@@ -71,14 +72,16 @@ pip install supabase pandas kagglehub
 
 ### Paso 2: Cargar dataset real de Kaggle
 ```bash
-# El script descarga y transforma el dataset automáticamente
-python3 scripts/load_kaggle_to_supabase.py
+# El script descarga el dataset de Kaggle y lo carga en Supabase automáticamente
+SUPABASE_PAT=sbp_xxxx python3 scripts/setup_full.py
 ```
 Carga: ~32,000 productos, ~99,000 órdenes, ~103,000 pagos
 
-### Paso 3: Capturar métricas EXPLAIN ANALYZE
-Ejecuta en el SQL Editor de Supabase el archivo `postgresql/optimization/00_setup_and_explain.sql`
-y copia el output para las evidencias.
+### Paso 3: Capturar métricas EXPLAIN ANALYZE (Q4 y Q5)
+```bash
+SUPABASE_PAT=sbp_xxxx python3 scripts/patch_q4_q5.py
+```
+Genera `evidencias/postgresql/metrics_raw.json` y `comparison_table.md`.
 
 ---
 
@@ -105,6 +108,25 @@ mongosh "mongodb+srv://olist.02nueqj.mongodb.net/" \
   --username santoles5_db_user \
   --file mongodb/optimization/02_indexes_and_pipeline.js
 ```
+
+---
+
+## Generar informe PDF
+
+```bash
+pip install reportlab matplotlib numpy
+python3 scripts/generate_report.py
+# → informe_unidad5_ecommify.pdf (14 páginas, gráficas embebidas)
+```
+
+## Notebooks de análisis
+
+| Notebook | Contenido |
+|---|---|
+| [`notebooks/Data_Exploration_Analysis.ipynb`](notebooks/Data_Exploration_Analysis.ipynb) | Exploración del dataset Olist (distribuciones, categorías, volumen) |
+| [`notebooks/Optimization_Analysis.ipynb`](notebooks/Optimization_Analysis.ipynb) | Benchmark antes/después: EXPLAIN ANALYZE PostgreSQL + executionStats MongoDB |
+
+Ábrelos en Google Colab subiendo el archivo o clonando el repositorio en Drive.
 
 ---
 

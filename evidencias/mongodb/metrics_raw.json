@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-06-16",
+  "database": "MongoDB Atlas",
+  "cluster": "olist.02nueqj.mongodb.net",
+  "database_name": "ecommify",
+  "collection_sizes": {
+    "products_catalog": 32951,
+    "order_reviews": 99224
+  },
+  "indexes_created": [
+    {
+      "name": "idx_esr_category_name_weight",
+      "collection": "products_catalog",
+      "keys": {"category.name": 1, "product_name": 1, "dimensions.weight_g": 1},
+      "type": "compound_ESR"
+    },
+    {
+      "name": "idx_partial_positive_reviews",
+      "collection": "order_reviews",
+      "keys": {"review_score": 1},
+      "partialFilterExpression": {"review_score": {"$gte": 4}},
+      "type": "partial"
+    },
+    {
+      "name": "idx_text_reviews",
+      "collection": "order_reviews",
+      "keys": {"review_comment_title": "text", "review_comment_message": "text"},
+      "type": "text"
+    }
+  ],
+  "queries": {
+    "Q1_ESR_compound": {
+      "description": "Búsqueda de productos por categoría con filtro de peso y ordenamiento alfabético",
+      "query": "db.products_catalog.find({'category.name': 'Celulares y Smartphones', 'dimensions.weight_g': {$gte: 200}}).sort('product_name', 1)",
+      "index_used": "idx_esr_category_name_weight",
+      "before": {
+        "stage": "SORT",
+        "totalDocsExamined": 32951,
+        "nReturned": 583,
+        "totalKeysExamined": 0,
+        "executionTimeMillis": 28,
+        "efficiency_ratio": 0.018
+      },
+      "after": {
+        "stage": "FETCH",
+        "totalDocsExamined": 583,
+        "nReturned": 583,
+        "totalKeysExamined": 1135,
+        "executionTimeMillis": 4,
+        "efficiency_ratio": 1.0
+      },
+      "improvement": {
+        "docs_examined_reduction_pct": 98.2,
+        "time_reduction_pct": 85.7,
+        "scan_type_change": "COLLSCAN → IXSCAN"
+      }
+    },
+    "Q2_partial_index": {
+      "description": "Consulta de reseñas con calificación >= 4 (reseñas positivas)",
+      "query": "db.order_reviews.find({'review_score': {$gte: 4}})",
+      "index_used": "idx_partial_positive_reviews",
+      "before": {
+        "stage": "COLLSCAN",
+        "totalDocsExamined": 99224,
+        "nReturned": 76470,
+        "totalKeysExamined": 0,
+        "executionTimeMillis": 68,
+        "efficiency_ratio": 0.77
+      },
+      "after": {
+        "stage": "FETCH",
+        "totalDocsExamined": 76470,
+        "nReturned": 76470,
+        "totalKeysExamined": 76470,
+        "executionTimeMillis": 100,
+        "efficiency_ratio": 1.0
+      },
+      "improvement": {
+        "docs_examined_reduction_pct": 22.9,
+        "time_reduction_pct": -47.1,
+        "scan_type_change": "COLLSCAN → FETCH",
+        "note": "Overhead mayor al beneficio: 77% de documentos retornados hace que el escaneo de índice sea más lento que COLLSCAN. Lección aprendida: índices parciales son efectivos solo cuando el subconjunto es < 30% de la colección."
+      }
+    },
+    "Q3_fulltext_search": {
+      "description": "Búsqueda full-text en comentarios de reseñas",
+      "query": "db.order_reviews.find({$text: {$search: 'excelente entrega'}})",
+      "index_used": "idx_text_reviews",
+      "before": {
+        "note": "No ejecutable sin índice de texto"
+      },
+      "after": {
+        "stage": "TEXT_MATCH",
+        "totalDocsExamined": 8652,
+        "nReturned": 8652,
+        "totalKeysExamined": 9162,
+        "executionTimeMillis": 60,
+        "efficiency_ratio": 1.0
+      },
+      "improvement": {
+        "docs_examined_vs_total_pct": 8.7,
+        "note": "8.7% de la colección examinada vs 100% sin índice. Habilitó funcionalidad de búsqueda semántica no posible sin índice."
+      }
+    }
+  },
+  "aggregation_pipeline": {
+    "description": "Pipeline de análisis de catálogo por categoría",
+    "stages": ["$match", "$unwind", "$group", "$project", "$sort"],
+    "stage_count": 5,
+    "allowDiskUse": true,
+    "executionTimeMillis": 114,
+    "result": [
+      {
+        "category": "Celulares y Smartphones",
+        "total_products": 4536,
+        "attributes_detected": ["weight_g", "width_cm", "height_cm", "length_cm"],
+        "avg_weight_g": 68.8
+      }
+    ],
+    "note": "Pipeline con $lookup sobre colección completa (99,224 docs) supera límite de tiempo del free tier de Atlas. Workaround: eliminar $lookup o aplicar $limit antes del $lookup."
+  }
+}

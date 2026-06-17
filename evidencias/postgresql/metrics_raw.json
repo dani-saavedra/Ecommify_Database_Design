@@ -1,0 +1,89 @@
+{
+  "generated_at": "2026-06-16T21:44:16.737688",
+  "database": "postgresql-supabase",
+  "table_counts": {
+    "products": 32951,
+    "customers": 99441,
+    "orders": 99441,
+    "payments": 103886,
+    "geolocations": 20,
+    "categories": 73
+  },
+  "queries": {
+    "Q1_btree_orders_customer": {
+      "before": {
+        "planning_time_ms": 3.13,
+        "execution_time_ms": 9.19,
+        "rows_returned": 1,
+        "scan_type": "Append"
+      },
+      "after": {
+        "planning_time_ms": 7.83,
+        "execution_time_ms": 5.74,
+        "rows_returned": 1,
+        "scan_type": "Append"
+      },
+      "improvement_pct": 37.5
+    },
+    "Q2_btree_products_category": {
+      "before": {
+        "planning_time_ms": 1.58,
+        "execution_time_ms": 336.95,
+        "rows_returned": 1478,
+        "scan_type": "Seq Scan"
+      },
+      "after": {
+        "planning_time_ms": 1.73,
+        "execution_time_ms": 4.95,
+        "rows_returned": 1478,
+        "scan_type": "Bitmap Heap Scan"
+      },
+      "improvement_pct": 98.5
+    },
+    "Q3_gin_jsonb_specifications": {
+      "before": {
+        "planning_time_ms": 0.5,
+        "execution_time_ms": 4.98,
+        "rows_returned": 0,
+        "scan_type": "Seq Scan"
+      },
+      "after": {
+        "planning_time_ms": 2.87,
+        "execution_time_ms": 0.19,
+        "rows_returned": 0,
+        "scan_type": "Bitmap Heap Scan"
+      },
+      "improvement_pct": 96.2
+    },
+    "Q4_gin_trigram_product_name": {
+      "before": {
+        "planning_time_ms": 14.84,
+        "execution_time_ms": 150.37,
+        "rows_returned": 0,
+        "scan_type": "Seq Scan"
+      },
+      "after": {
+        "planning_time_ms": 5.96,
+        "execution_time_ms": 0.95,
+        "rows_returned": 0,
+        "scan_type": "Bitmap Heap Scan"
+      },
+      "improvement_pct": 99.4
+    },
+    "Q5_gist_geospatial": {
+      "before": {
+        "planning_time_ms": 191.62,
+        "execution_time_ms": 83.13,
+        "rows_returned": 7,
+        "scan_type": "Seq Scan"
+      },
+      "after": {
+        "planning_time_ms": 30.26,
+        "execution_time_ms": 11.53,
+        "rows_returned": 7,
+        "scan_type": "Seq Scan"
+      },
+      "improvement_pct": 86.1
+    }
+  }
+}

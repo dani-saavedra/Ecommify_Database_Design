@@ -41,8 +41,9 @@ Universidad de La Sabana — Diseño y Optimización de Bases de Datos, 2026
 │   └── Optimization_Analysis.ipynb # Benchmark antes/después
 ├── scripts/
 │   ├── setup_full.py               # Carga dataset Kaggle en Supabase + crea índices
-│   ├── patch_q4_q5.py              # Captura métricas EXPLAIN ANALYZE (Q4 GIN trigram, Q5 GiST)
-│   └── generate_report.py          # Genera informe_unidad5_ecommify.pdf con gráficas embebidas
+│   ├── load_kaggle_to_supabase.py  # Descarga y transforma dataset Olist desde Kaggle
+│   ├── capture_explain_metrics.py  # Captura métricas EXPLAIN ANALYZE automatizada
+│   └── patch_q4_q5.py              # Métricas EXPLAIN ANALYZE (Q4 GIN trigram, Q5 GiST)
 ├── evidencias/
 │   ├── postgresql/
 │   │   ├── metrics_raw.json
@@ -111,14 +112,6 @@ mongosh "mongodb+srv://olist.02nueqj.mongodb.net/" \
 
 ---
 
-## Generar informe PDF
-
-```bash
-pip install reportlab matplotlib numpy
-python3 scripts/generate_report.py
-# → informe_unidad5_ecommify.pdf (14 páginas, gráficas embebidas)
-```
-
 ## Notebooks de análisis
 
 | Notebook | Contenido |
@@ -142,7 +135,17 @@ python3 scripts/generate_report.py
 
 > *Q2: El índice parcial es más lento porque retorna el 77% de la colección. Lección aprendida: índices parciales son efectivos solo cuando el subconjunto es < 30%.
 
-### PostgreSQL (ver `evidencias/postgresql/comparison_table.md`)
+### PostgreSQL (datos reales — 32,951 productos, 99,441 órdenes, 103,886 pagos)
+
+| Query | Tipo índice | Tiempo antes | Tiempo después | Scan antes | Scan después | Mejora |
+|---|---|---|---|---|---|---|
+| Q1: Historial por cliente | B-Tree | 9.19 ms | 5.74 ms | Append | Append | 37.5% |
+| Q2: Productos por categoría | B-Tree | 336.95 ms | 4.95 ms | Seq Scan | Bitmap Heap | 98.5% |
+| Q3: Atributos JSONB | GIN | 4.98 ms | 0.19 ms | Seq Scan | Bitmap Heap | 96.2% |
+| Q4: Búsqueda difusa (trigram) | GIN trigram | 150.37 ms | 0.95 ms | Seq Scan | Bitmap Heap | 99.4% |
+| Q5: Geoespacial PostGIS | GiST | 83.13 ms | 11.53 ms | Seq Scan | Seq Scan | 86.1% |
+
+> Medido con `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` en Supabase (PostgreSQL 15). Detalle completo en `evidencias/postgresql/comparison_table.md`.
 
 ---
 
